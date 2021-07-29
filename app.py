@@ -6,7 +6,7 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import UniqueConstraint
@@ -48,7 +48,12 @@ class Venue(db.Model):
     website_link = db.Column(db.String())
     seeking_talent = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.String())
-    shows = db.relationship("Show", backref="venues", lazy=True)
+    shows = db.relationship(
+        "Show", 
+        backref="venues", 
+        lazy=True, 
+        cascade="all, delete-orphan", 
+        )
 
     def __repr__(self):
         return f"<Venue {self.id} {self.name}>"
@@ -67,7 +72,11 @@ class Artist(db.Model):
     website_link = db.Column(db.String())
     seeking_venue = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.String())
-    shows = db.relationship("Show", backref="artists", lazy=True)
+    shows = db.relationship(
+        "Show",
+        backref="artists",
+        lazy=True
+    )
 
     def __repr__(self):
         return f"<Artist {self.id} {self.name}>"
@@ -76,8 +85,16 @@ class Artist(db.Model):
 class Show(db.Model):
     __tablename__ = "shows"
     id = db.Column(db.Integer, primary_key=True)
-    artist_id = db.Column(db.Integer, db.ForeignKey("artists.id"), nullable=False)
-    venue_id = db.Column(db.Integer, db.ForeignKey("venues.id"), nullable=False)
+    artist_id = db.Column(
+        db.Integer, 
+        db.ForeignKey("artists.id"), 
+        nullable=False
+    )
+    venue_id = db.Column(
+        db.Integer, 
+        db.ForeignKey("venues.id"), 
+        nullable=False
+    )
     start_time = db.Column(db.DateTime, nullable=False, default=datetime.now())
 
     def __repr__(self):
@@ -175,7 +192,7 @@ def search_venues():
 @app.route("/venues/<int:venue_id>")
 def show_venue(venue_id):
     """Shows the specific venue's page."""
-    venue = Venue.query.filter_by(id=venue_id).first()
+    venue = Venue.query.get(venue_id)
     past_shows = []
     upcoming_shows = []
     for show in venue.shows:
@@ -235,9 +252,8 @@ def create_venue_submission():
         ).first()
         if venue:
             flash(
-                "Venue "
-                + form.name.data
-                + " already exits. You cannot add the same venue twice !"
+                form.name.data
+                + " has already exited. You cannot add the same venue twice !"
             )
             return render_template("pages/home.html")
         try:
@@ -254,9 +270,9 @@ def create_venue_submission():
             db.session.close()
         if not error:
             # give feedback to users with the flashing system
-            flash("Venue " + request.form["name"] + " was successfully listed!")
+            flash(request.form["name"] + " was successfully listed !")
         else:
-            flash("Sorry! Venue " + request.form["name"] + " could not be listed!")
+            flash("Sorry, " + request.form["name"] + " could not be listed !")
         return render_template("pages/home.html")
     else:
         for field_name, error_msg in form.errors.items():
@@ -294,9 +310,9 @@ def edit_venue_submission(venue_id):
             db.session.close()
         if not error:
             # give feedback to users with the flashing system
-            flash("Venue " + request.form["name"] + " was successfully updated!")
+            flash(request.form["name"] + " was successfully updated!")
         else:
-            flash("Sorry! Venue " + request.form["name"] + " could not be updated!")
+            flash("Sorry, " + request.form["name"] + " could not be updated!")
         return redirect(url_for("show_venue", venue_id=venue_id))
     else:
         for error_msg in form.errors.items():
@@ -307,14 +323,27 @@ def edit_venue_submission(venue_id):
         )
 
 
-@app.route('/venues/<venue_id>', methods=['DELETE'])
-def delete_venue(venue_id):
-  # TODO: Complete this endpoint for taking a venue_id, and using
-  # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
-
-  # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
-  # clicking that button delete it from the db then redirect the user to the homepage
-  return None
+@app.route("/venues/<int:venue_id>", methods=["DELETE"])
+def delete_venue_obj(venue_id):
+    error = False
+    venue_name = ""
+    try:
+        venue = Venue.query.get(venue_id)
+        venue_name = venue.name
+        # print('delete successfully')
+        db.session.delete(venue)
+        db.session.commit()
+    except:
+        error = True
+        db.session.rollback()
+        print(sys.exc_info())
+    finally:
+        db.session.close()
+    if not error:
+        flash(venue_name + " was successfully deleted !")
+    else:
+        flash("Error occured. " + venue_name + " could not be deleted !")
+    return redirect(url_for("index"))
 
 
 #  -------------------------- Artists --------------------------
@@ -420,10 +449,9 @@ def create_artist_submission():
             Artist.state == form.state.data,
             Artist.phone == form.phone.data,
         ).first()
-        if venues:
+        if artist:
             flash(
-                "Artist "
-                + form.name.data
+                form.name.data
                 + " already exits. You cannot add the same artist twice !"
             )
             return render_template("pages/home.html")
@@ -440,13 +468,13 @@ def create_artist_submission():
         finally:
             db.session.close()
         if not error:
-            flash("Artist " + request.form["name"] + " was successfully listed!")
+            flash(request.form["name"] + " was successfully listed !")
         else:
-            flash("Sorry! Artist " + request.form["name"] + " could not be listed!")
+            flash("Sorry, " + request.form["name"] + " could not be listed !")
         return render_template("pages/home.html")
     else:
         for field_name, error_msg in form.errors.items():
-            flash("Error in " + field_name + ": " + str(error_msg[0]))
+            flash(str(error_msg[0]))
         return render_template("errors/500.html", url="/artists/create"), 500
 
 
@@ -479,9 +507,9 @@ def edit_artist_submission(artist_id):
             db.session.close()
         if not error:
             # give feedback to users with the flashing system
-            flash("Artist " + request.form["name"] + " was successfully updated!")
+            flash(request.form["name"] + " was successfully updated!")
         else:
-            flash("Sorry! Artist " + request.form["name"] + " could not be updated!")
+            flash("Sorry, " + request.form["name"] + " could not be updated!")
         return redirect(url_for("show_artist", artist_id=artist_id))
     else:
         for error_msg in form.errors.items():
@@ -548,8 +576,8 @@ def create_show_submission():
         error = False
         show = Show.query.filter(
             Show.artist_id == form.artist_id.data,
-            Show.venue_id == form.city.data,
-            Show.start_time == form.start_time.data
+            Show.venue_id == form.venue_id.data,
+            Show.start_time == form.start_time.data,
         ).first()
         if show:
             flash("You cannot add the same show twice !")
@@ -567,9 +595,9 @@ def create_show_submission():
         finally:
             db.session.close()
         if not error:
-            flash("Show was successfully listed!")
+            flash("Show was successfully listed !")
         else:
-            flash("Sorry! Show could not be listed!")
+            flash("Sorry! Show could not be listed !")
         return render_template("pages/home.html")
     else:
         for field_name, error_msg in form.errors.items():
@@ -597,8 +625,9 @@ if not app.debug:
     app.logger.addHandler(file_handler)
     app.logger.info("errors")
 
+
 # ----------------------------------------------------------------------------#
-# Launch.
+#                                 Launch.
 # ----------------------------------------------------------------------------#
 
 # Default port:
