@@ -121,7 +121,6 @@ def index():
 @app.route('/venues')
 def venues():
     """ Shows all venues, grouped by areas(city&state). """
-
     # use "with_entities()" method to limit the columns to be returned
     areas = Venue.query.with_entities(
         Venue.city, Venue.state).group_by(Venue.city, Venue.state).all()
@@ -150,7 +149,6 @@ def venues():
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
     """ Search venues with partial string search, case-insensitive. """
-
     user_input = request.form.get('search_term', '')
     candidates = Venue.query.filter(Venue.name.ilike(f'%{user_input}%'))
     data = []
@@ -175,7 +173,6 @@ def search_venues():
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
     """ Shows the specific venue's page. """
-
     venue = Venue.query.filter_by(id=venue_id).first()
     past_shows = []
     upcoming_shows = []
@@ -219,28 +216,17 @@ def create_venue_form():
     return render_template('forms/new_venue.html', form=form)
 
 
-# TODO: avoid duplicated or nonsensical creation?
+# TODO: avoid duplicated(not yet) or nonsensical creation(OK)
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
     """ Create a new venue, should avoid duplicated or nonsensical creation. """
-    form = VenueForm()         
-    if form.validate_on_submit():
+    form = VenueForm(meta={"csrf": False})         
+    if form.validate_on_submit():  
         error = False
         try:
-            seeking_talent = True if request.form.get('seeking_talent') else False
-            new_venue = Venue(
-                name=request.form.get('name'),
-                city=request.form.get('city'),
-                state=request.form.getlist('state'),
-                address=request.form.get('address'),
-                phone=request.form.get('phone'),
-                genres=request.form.getlist('genres'),
-                facebook_link=request.form.get('fackbook_link'),
-                image_link=request.form.get('image_link'),
-                website_link=request.form.get('website_link'),
-                seeking_talent=seeking_talent,
-                seeking_description=request.form.get('seeking_description')
-            )
+            new_venue = Venue()
+            for field in form:
+                setattr(new_venue, field.name, field.data)
             db.session.add(new_venue)
             db.session.commit()
         except:
@@ -250,7 +236,7 @@ def create_venue_submission():
         finally:
             db.session.close()
         if not error:
-            # give feedback to a user with the flashing system
+            # give feedback to users with the flashing system
             flash('Venue ' + request.form['name'] + ' was successfully listed!')
         else:
             flash('Sorry! Venue ' + request.form['name'] + ' could not be listed!')
@@ -264,22 +250,18 @@ def create_venue_submission():
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
     form = VenueForm()
-    venue = {
-        "id": 1,
-        "name": "The Musical Hop",
-        "genres": ["Jazz", "Reggae", "Swing", "Classical", "Folk"],
-        "address": "1015 Folsom Street",
-        "city": "San Francisco",
-        "state": "CA",
-        "phone": "123-123-1234",
-        "website": "https://www.themusicalhop.com",
-        "facebook_link": "https://www.facebook.com/TheMusicalHop",
-        "seeking_talent": True,
-        "seeking_description": "We are on the lookout for a local artist to play every two weeks. Please call us.",
-        "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60"
-    }
-    # TODO: populate form with values from venue with ID <venue_id>
-    return render_template('forms/edit_venue.html', form=form, venue=venue)
+    venue = Venue.query.get(venue_id)
+    
+    if venue:
+        return render_template('forms/edit_venue.html', form=form, venue=venue)
+    else:
+        return render_template('errors/404.html'), 404
+    
+    # for field in form:
+    #     # TODO:
+    #     print(field.name, field.data)
+    # # TODO: populate form with values from venue with ID <venue_id>
+    # return render_template('forms/edit_venue.html', form=form, venue=venue)
 
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
@@ -407,7 +389,6 @@ def edit_artist_submission(artist_id):
     return redirect(url_for('show_artist', artist_id=artist_id))
 
 
-# TODO: 未完
 @app.route('/artists/create', methods=['GET'])
 def create_artist_form():
     form = ArtistForm()
@@ -418,45 +399,31 @@ def create_artist_form():
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
     """ Creates a new artist. You should avoid duplicated or nonsensical creation. """
-    error = False
-    try:
-        name = request.form.get('name')
-        city = request.form.get('city')
-        state = request.form.get('state')
-        phone = request.form.get('phone')
-        genres = request.form.get('genres')
-        facebook_link = request.form.get('fackbook_link')
-        image_link = request.form.get('image_link')
-        website_link = request.form.get('website_link')
-        seeking_venue = True if request.form.get('seeking_venue') else False
-        seeking_description = request.form.get('seeking_description')
-        new_artist = Artist(
-            name=name,
-            city=city,
-            state=state,
-            phone=phone,
-            genres=genres,
-            facebook_link=facebook_link,
-            image_link=image_link,
-            website_link=website_link,
-            seeking_venue=seeking_venue,
-            seeking_description=seeking_description
-        )
-        print('Create a new artist')
-        # db.session.add(new_artist)
-        # db.session.commit()
-    except:
-        error = True
-        db.session.rollback()
-        print(sys.exc_info())
-    finally:
-        db.session.close
-    if not error:
-        flash('Artist ' + request.form['name'] + ' was successfully listed!')
+    form = ArtistForm(meta={"csrf": False})
+    if form.validate_on_submit():
+        error = False
+        try:
+            new_artist = Artist()
+            for field in form:
+                setattr(new_artist, field.name, field.data)
+            db.session.add(new_artist)
+            db.session.commit()
+        except:
+            error = True
+            db.session.rollback()
+            print(sys.exc_info())
+        finally:
+            db.session.close()
+        if not error:
+            flash('Artist ' + request.form['name'] + ' was successfully listed!')
+        else:
+            flash('Sorry! Artist ' +
+                request.form['name'] + ' could not be listed!')
+        return render_template('pages/home.html')
     else:
-        flash('Sorry! Artist ' +
-              request.form['name'] + ' could not be listed!')
-    return render_template('pages/home.html')
+        for field_name, error_msg in form.errors.items():
+            flash('Error in ' + field_name + ": " + str(error_msg[0]))
+        return render_template('errors/500.html', url='/artists/create'), 500
 
 
 # @app.route('/artist/<artist_id>', methods=['DELETE'])
@@ -496,36 +463,44 @@ def shows():
 def create_shows():
   # renders form. do not touch.
     form = ShowForm()
-    return render_template('forms/new_show.html', form=form)
+    artists_page = '/artists'
+    venues_page = '/venues'
+    return render_template(
+        'forms/new_show.html', 
+        form=form, 
+        artists_url=artists_page, 
+        venues_url=venues_page
+    )
 
 
 # TODO: avoid duplicated or nonsensical creation
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
     """ Creates a new show. You should avoid duplicated or nonsensical creation. """
-    error = False
-    try:
-        artist_id = request.form.get('artist_id')
-        venue_id = request.form.get('venue_id')
-        start_time = request.form.get('start_time')
-        new_show = Show(
-            artist_id=artist_id,
-            venue_id=venue_id,
-            start_time=start_time
-        )
-        db.session.add(new_show)
-        db.session.commit()
-    except:
-        error = True
-        db.session.rollback()
-        print(sys.exc_info())
-    finally:
-        db.session.close
-    if not error:
-        flash('Show was successfully listed!')
+    form = ShowForm(meta={"csrf": False})
+    if form.validate_on_submit():
+        error = False
+        try:
+            new_show = Show()
+            for field in form:
+                setattr(new_show, field.name, field.data)
+            db.session.add(new_show)
+            db.session.commit()
+        except:
+            error = True
+            db.session.rollback()
+            print(sys.exc_info())
+        finally:
+            db.session.close()
+        if not error:
+            flash('Show was successfully listed!')
+        else:
+            flash('Sorry! Show could not be listed!')
+        return render_template('pages/home.html')
     else:
-        flash('Sorry! Show could not be listed!')
-    return render_template('pages/home.html')
+        for field_name, error_msg in form.errors.items():
+            flash('Error in ' + field_name + ": " + str(error_msg[0]))
+        return render_template('errors/500.html', url='/shows/create'), 500
 
 
 @app.errorhandler(404)
