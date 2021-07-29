@@ -193,7 +193,7 @@ def search_venues():
 @app.route("/venues/<int:venue_id>")
 def show_venue(venue_id):
     """Shows the specific venue's page."""
-    print('enter--------------------------')  #TODO:
+    print('enter--------------------------')
     venue = Venue.query.get(venue_id)
     past_shows = []
     upcoming_shows = []
@@ -326,7 +326,7 @@ def edit_venue_submission(venue_id):
             500,
         )
 
-# TODO:
+
 @app.route("/venues/<int:venue_id>", methods=["DELETE"])
 def delete_venue(venue_id):
     error = False
