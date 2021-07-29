@@ -52,7 +52,7 @@ class Venue(db.Model):
         "Show", 
         backref="venues", 
         lazy=True, 
-        cascade="all, delete-orphan", 
+        cascade="all, delete-orphan" 
         )
 
     def __repr__(self):
@@ -75,7 +75,8 @@ class Artist(db.Model):
     shows = db.relationship(
         "Show",
         backref="artists",
-        lazy=True
+        lazy=True,
+        cascade="all, delete-orphan"
     )
 
     def __repr__(self):
@@ -192,21 +193,24 @@ def search_venues():
 @app.route("/venues/<int:venue_id>")
 def show_venue(venue_id):
     """Shows the specific venue's page."""
+    print('enter--------------------------')  #TODO:
     venue = Venue.query.get(venue_id)
     past_shows = []
     upcoming_shows = []
-    for show in venue.shows:
-        artist = Artist.query.filter_by(id=show.artist_id).first()
-        show_info = {
-            "artist_id": artist.id,
-            "artist_name": artist.name,
-            "artist_image_link": artist.image_link,
-            "start_time": show.start_time.strftime("%Y-%m-%d %H:%M:%S"),
-        }
-        if str(show_info["start_time"]) < str(datetime.now()):
-            past_shows.append(show_info)
-        else:
-            upcoming_shows.append(show_info)
+    print(len(venue.shows))
+    if venue.shows:
+        for show in venue.shows:
+            artist = Artist.query.filter_by(id=show.artist_id).first()
+            show_info = {
+                "artist_id": artist.id,
+                "artist_name": artist.name,
+                "artist_image_link": artist.image_link,
+                "start_time": show.start_time.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            if str(show_info["start_time"]) < str(datetime.now()):
+                past_shows.append(show_info)
+            else:
+                upcoming_shows.append(show_info)
     venue_info = {
         "id": venue.id,
         "name": venue.name,
@@ -322,15 +326,15 @@ def edit_venue_submission(venue_id):
             500,
         )
 
-
+# TODO:
 @app.route("/venues/<int:venue_id>", methods=["DELETE"])
-def delete_venue_obj(venue_id):
+def delete_venue(venue_id):
     error = False
     venue_name = ""
     try:
         venue = Venue.query.get(venue_id)
         venue_name = venue.name
-        # print('delete successfully')
+        print('delete successfully')
         db.session.delete(venue)
         db.session.commit()
     except:
@@ -343,7 +347,7 @@ def delete_venue_obj(venue_id):
         flash(venue_name + " was successfully deleted !")
     else:
         flash("Error occured. " + venue_name + " could not be deleted !")
-    return redirect(url_for("index"))
+    return jsonify({'success': True})
 
 
 #  -------------------------- Artists --------------------------
@@ -520,14 +524,26 @@ def edit_artist_submission(artist_id):
         )
 
 
-# @app.route('/artist/<artist_id>', methods=['DELETE'])
-# def delete_venue(artist_id):
-#   # TODO: Complete this endpoint for taking a artist_id, and using
-#   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
-
-#   # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
-#   # clicking that button delete it from the db then redirect the user to the homepage
-#   return None
+@app.route('/artists/<int:artist_id>', methods=['DELETE'])
+def delete_artist(artist_id):
+    error = False
+    artist_name = ""
+    try:
+        artist = Artist.query.get(artist_id)
+        artist_name = artist.name
+        db.session.delete(artist)
+        db.session.commit()
+    except:
+        error = True
+        db.session.rollback()
+        print(sys.exc_info())
+    finally:
+        db.session.close()
+    if not error:
+        flash(artist_name + " was successfully deleted !")
+    else:
+        flash("Error occured. " + artist_name + " could not be deleted !")
+    return jsonify({'success': True})
 
 
 #  -------------------------- Shows --------------------------
