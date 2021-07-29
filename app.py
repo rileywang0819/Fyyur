@@ -243,7 +243,7 @@ def create_venue_submission():
         return render_template('pages/home.html')
     else:
         for field_name, error_msg in form.errors.items():
-            flash('Error in ' + field_name + ": " + str(error_msg[0]))
+            flash(str(error_msg[0]))
         return render_template('errors/500.html', url='/venues/create'), 500
 
 
@@ -251,24 +251,42 @@ def create_venue_submission():
 def edit_venue(venue_id):
     form = VenueForm()
     venue = Venue.query.get(venue_id)
-    
     if venue:
-        return render_template('forms/edit_venue.html', form=form, venue=venue)
-    else:
-        return render_template('errors/404.html'), 404
-    
-    # for field in form:
-    #     # TODO:
-    #     print(field.name, field.data)
-    # # TODO: populate form with values from venue with ID <venue_id>
-    # return render_template('forms/edit_venue.html', form=form, venue=venue)
+        for field in form:
+            field.data = getattr(venue, field.name, field.data)
+        return render_template('forms/edit_venue.html', form=form, venue=venue)  
+    return render_template('errors/404.html'), 404
 
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
+    """ Update the specific venue. """
     # TODO: take values from the form submitted, and update existing
     # venue record with ID <venue_id> using the new attributes
-    return redirect(url_for('show_venue', venue_id=venue_id))
+    form = VenueForm(meta={"csrf": False})
+    if form.validate_on_submit():  
+        error = False 
+        venue = Venue.query.get(venue_id)
+        try:
+            for field in form:
+                setattr(venue, field.name, field.data)
+            db.session.commit()
+        except:
+            error = True
+            db.session.rollback()
+            print(sys.exc_info())
+        finally:
+            db.session.close()
+        if not error:
+            # give feedback to users with the flashing system
+            flash('Venue ' + request.form['name'] + ' was successfully updated!')
+        else:
+            flash('Sorry! Venue ' + request.form['name'] + ' could not be updated!')
+        return redirect(url_for('show_venue', venue_id=venue_id))
+    else:
+        for error_msg in form.errors.items():
+            flash(str(error_msg[0]))
+        return render_template('errors/500.html', url='/venues/<int:venue_id>/edit'), 500
 
 
 # @app.route('/venues/<venue_id>', methods=['DELETE'])
