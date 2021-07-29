@@ -77,8 +77,6 @@ Highlight folders:
 * `config.py` -- (Missing functionality.) Stores configuration variables and instructions, separate from the main application code. This is where you will need to connect to the database.
 
 
-
-
 ## Run
 
 0. **Download and install the dependencies mentioned above**
@@ -125,5 +123,5 @@ python3 app.py
 ```
 
 5. **Verify on the Browser**<br>
-Navigate to project homepage [http://127.0.0.1:5000/](http://127.0.0.1:5000/) or [http://localhost:5000](http://localhost:5000) 
+Navigate to project homepage [http://127.0.0.1:5000/](http://127.0.0.1:5000/)
 
