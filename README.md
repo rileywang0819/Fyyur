@@ -42,86 +42,72 @@ npm install bootstrap@3
 
   ```sh
   ├── README.md
-  ├── app.py *** the main driver of the app. Includes your SQLAlchemy models.
-                    "python app.py" to run after installing dependencies
-  ├── config.py *** Database URLs, CSRF generation, etc
   ├── error.log
-  ├── forms.py *** Your forms
-  ├── requirements.txt *** The dependencies we need to install with "pip3 install -r requirements.txt"
-  ├── static
-  │   ├── css 
-  │   ├── font
-  │   ├── ico
-  │   ├── img
-  │   └── js
-  └── templates
-      ├── errors
-      ├── forms
-      ├── layouts
-      └── pages
+  ├── run.py  *** "python app.py" to run the project 
+                  after installing dependencies
+  ├── config.py *** Database URLs, CSRF generation, etc
+  ├── requirements.txt *** The dependencies we need to install with 
+                        "pip3 install -r requirements.txt"
+  ├── fyyur
+        ├── __init.py__
+        ├── models.py  *** sqlalchemy models
+        ├── forms.py  *** forms used to create artists, shows and venues
+        ├── enums.py  *** enum class of genre and state choices
+        ├── migrations  *** data schema migration
+        ├── routes  *** routes and handlers
+        |   ├── __init__.py
+        │   ├── general.py
+        │   ├── venue.py
+        │   ├── artist.py
+        │   └── show.py
+        ├── static  *** frontend built static assets
+        │   ├── css 
+        │   ├── font
+        │   ├── ico
+        │   ├── img
+        │   └── js
+        └── templates  *** templates render views based on data
+            ├── errors
+            ├── forms
+            ├── layouts
+            └── pages
   ```
-
-Overall:
-* Models are located in the `MODELS` section of `app.py`.
-* Controllers are also located in `app.py`.
-* The web frontend is located in `templates/`, which builds static assets deployed to the web server at `static/`.
-* Web forms for creating data are located in `form.py`
-
-
-Highlight folders:
-* `templates/pages` -- (Already complete.) Defines the pages that are rendered to the site. These templates render views based on data passed into the template’s view, in the controllers defined in `app.py`. These pages successfully represent the data to the user, and are already defined for you.
-* `templates/layouts` -- (Already complete.) Defines the layout that a page can be contained in to define footer and header code for a given page.
-* `templates/forms` -- (Already complete.) Defines the forms used to create new artists, shows, and venues.
-* `app.py` -- (Missing functionality.) Defines routes that match the user’s URL, and controllers which handle data and renders views to the user. This is the main file you will be working on to connect to and manipulate the database and render views with data to the user, based on the URL.
-* Models in `app.py` -- (Missing functionality.) Defines the data models that set up the database tables.
-* `config.py` -- (Missing functionality.) Stores configuration variables and instructions, separate from the main application code. This is where you will need to connect to the database.
-
 
 ## Run
 
-0. **Download and install the dependencies mentioned above**
-
+1. **Initialize and activate a virtualenv using:**
 ```
 $ pip install virtualenv
-$ pip install SQLAlchemy
-$pip install postgres
-$ pip install Flask
-$ pip install Flask-Migrate
+$ python -m virtualenv env
+$ source env/bin/activate
+```
+>**Note** - In Windows, the `env` does not have a `bin` directory. Therefore, you'd use the analogous command shown below:
+```
+$ source env/Scripts/activate
+```
+> If you'd want to close virtual env, use the command shown below:
+```
+(env) $ deactivate
+```
+
+2. **Download and install the dependencies:**
+
+```
+(env) $ pip install SQLAlchemy
+(env) $ pip install postgres
+(env) $ pip install Flask
+(env) $ pip install Flask-Migrate
+(env) $ pip install -r requirements.txt
 ```
 > **Note** - If we do not mention the specific version of a package, then the default latest stable package will be installed. 
 
 
-1. **Download the project code locally**
+3. **Run the development server:**
 ```
-git clone https://github.com/rileywang0819/Fyyur
-```
-
-2. **Initialize and activate a virtualenv using:**
-```
-python -m virtualenv env
-source env/bin/activate
-```
->**Note** - In Windows, the `env` does not have a `bin` directory. Therefore, you'd use the analogous command shown below:
-```
-source env/Scripts/activate
-```
-> If you'd want to close virtual env, use the command shown below:
-```
-deactivate
+(env) $ python3 run.py
 ```
 
-3. **Install the dependencies:**
-```
-pip install -r requirements.txt
-```
+4. **Verify on the Browser**
 
-4. **Run the development server:**
-```
-export FLASK_APP=app/app.
-export FLASK_ENV=development # enables debug mode
-python3 app.py
-```
-
-5. **Verify on the Browser**<br>
 Navigate to project homepage [http://127.0.0.1:5000/](http://127.0.0.1:5000/)
 
